@@ -32,6 +32,7 @@
 
 
 #include <cdefs.h> /* for __DEAD */
+#include "opt-my_syscall.h"
 struct trapframe; /* from <machine/trapframe.h> */
 
 /*
@@ -49,7 +50,7 @@ void enter_forked_process(struct trapframe *tf);
 
 /* Enter user mode. Does not return. */
 __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
-		       vaddr_t stackptr, vaddr_t entrypoint);
+		vaddr_t stackptr, vaddr_t entrypoint);
 
 
 /*
@@ -58,5 +59,11 @@ __DEAD void enter_new_process(int argc, userptr_t argv, userptr_t env,
 
 int sys_reboot(int code);
 int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
+
+#if OPT_MY_SYSCALL
+int sys_read(int fd, const void *buff, size_t count);
+int sys_write(int fd, void *buff, size_t count);
+void sys__exit(int exit_code);
+#endif
 
 #endif /* _SYSCALL_H_ */

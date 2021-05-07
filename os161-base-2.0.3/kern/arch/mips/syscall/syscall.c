@@ -75,7 +75,7 @@
  * stack, starting at sp+16 to skip over the slots for the
  * registerized values, with copyin().
  */
-void
+	void
 syscall(struct trapframe *tf)
 {
 	int callno;
@@ -100,21 +100,36 @@ syscall(struct trapframe *tf)
 	retval = 0;
 
 	switch (callno) {
-	    case SYS_reboot:
-		err = sys_reboot(tf->tf_a0);
-		break;
+		case SYS_reboot:
+			err = sys_reboot(tf->tf_a0);
+			break;
 
-	    case SYS___time:
-		err = sys___time((userptr_t)tf->tf_a0,
-				 (userptr_t)tf->tf_a1);
-		break;
+		case SYS___time:
+			err = sys___time((userptr_t)tf->tf_a0,
+					(userptr_t)tf->tf_a1);
+			break;
+#if OPT_MY_SYSCALL
+		case SYS_read:
+			retval = sys_read((int) tf->tf_a0, (const void*) tf->tf_a1, (size_t) tf->tf_a2);
+			if(retval < 0) err = ENOSYS;
+			else	err = 0;
+			break;
+		case SYS_write:
+			retval = sys_write((int) tf->tf_a0, (void*) tf->tf_a1, (size_t) tf->tf_a2);
+			if(retval < 0) err = ENOSYS;
+			else	err = 0;
+			break;
+		case SYS__exit:
+			sys__exit((int) tf->tf_a0);
+			err = 0;
+			break;
+#endif
+			/* Add stuff here */
 
-	    /* Add stuff here */
-
-	    default:
-		kprintf("Unknown syscall %d\n", callno);
-		err = ENOSYS;
-		break;
+		default:
+			kprintf("Unknown syscall %d\n", callno);
+			err = ENOSYS;
+			break;
 	}
 
 
@@ -154,7 +169,7 @@ syscall(struct trapframe *tf)
  *
  * Thus, you can trash it and do things another way if you prefer.
  */
-void
+	void
 enter_forked_process(struct trapframe *tf)
 {
 	(void)tf;
