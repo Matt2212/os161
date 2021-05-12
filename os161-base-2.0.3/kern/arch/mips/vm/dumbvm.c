@@ -68,7 +68,7 @@ static struct spinlock stealmem_lock = SPINLOCK_INITIALIZER;
 
 #if DUMBVM_WITH_FREE
 
-static typedef struct
+typedef struct
 {
 	uint8_t free : 1;
 	uint32_t size : 17;
@@ -76,7 +76,7 @@ static typedef struct
 } page_info;
 
 static struct spinlock freemem_lock = SPINLOCK_INITIALIZER;
-static page_info *pages;
+static page_info *pages = NULL;
 static uint32_t nRamFrames = 0;
 
 static uint8_t allocTableActive = 0;
@@ -95,11 +95,11 @@ static uint8_t isTableActive()
 void vm_bootstrap(void)
 {
 #if DUMBVM_WITH_FREE
-	int i, pages_not_free, no_fit = 1;
-	paddr_t firstFree;
+	uint32_t i, pages_not_free, no_fit = 1;
+	paddr_t first_free;
 	nRamFrames = ram_getsize() / PAGE_SIZE;
 	KASSERT(nRamFrames > 0);
-	firstFree = ram_getfirstfree();
+	first_free = ram_getfirstfree();
 	pages = kmalloc(sizeof(page_info) * nRamFrames);
 	if (pages == NULL)
 		return;
@@ -109,14 +109,14 @@ void vm_bootstrap(void)
 		pages[i].free = 1;
 		pages[i].size = 0;
 	}
-	if (!(firstFree % PAGE_SIZE))
+	if (!(first_free % PAGE_SIZE))
 		no_fit = 0;
 	pages_not_free = first_free / PAGE_SIZE + no_fit;
 	pages[0].size = pages_not_free;
 	for (i = 0; i < pages_not_free; i++)
 		pages[i].free = 0;
-	KASSERT(nRamFrames > pages_not_free)
-	pages[pages_not_free] = nRamFrames - pages_not_free;
+	KASSERT(nRamFrames > pages_not_free);
+	pages[pages_not_free].size = nRamFrames - pages_not_free;
 	spinlock_acquire(&freemem_lock);
 	allocTableActive = 1;
 	spinlock_release(&freemem_lock);
@@ -150,7 +150,7 @@ getppages(unsigned long npages)
 	spinlock_acquire(&stealmem_lock);
 #if DUMBVM_WITH_FREE
 	//search of the first free page
-	int page, i = 0, found;
+	uint32_t page, i = 0, found = 0;
 
 	if (!isTableActive())
 	{ //dovremmo essere al bootstrap quindi possiamo allocare in maniera contigua
@@ -164,7 +164,7 @@ getppages(unsigned long npages)
 		if (pages[i].free && pages[i].size >= npages)
 			found = 1;
 		else
-			i += pages[i].size();
+			i += pages[i].size;
 	}
 
 	if (!found)
@@ -189,19 +189,45 @@ getppages(unsigned long npages)
 #if DUMBVM_WITH_FREE
 static void freeppages(paddr_t addr)
 {
-	uint32_t i, page = addr / PAGE_SIZE, oldSize = 0, mysize;
+	uint32_t i, next, page = addr / PAGE_SIZE, mysize;
+	if (!isTableActive()) return;
 	spinlock_acquire(&stealmem_lock);
 	mysize = pages[page].size;
-	if (page + mysize < nRamFrames && pages[mysize + page].free)
-	{
-		oldSize = pages[page + mysize];
-		pages[page + mysize].size = 0;
-	}
-	pages[page].size = mysize + oldsize;
+
 	for (i = 0; i < mysize; i++)
 		pages[page + i].free = 1;
-	//Termina
-	spinlock_release(&stealmem_lock);
+
+	/*if (page + mysize < nRamFrames && pages[mysize + page].free)
+	{
+		uint32_t oldSize = pages[page + mysize].size;
+		pages[page + mysize].size = 0;
+		mysize += oldSize;
+	}
+	
+	i = 1;
+	while(page > 0 && pages[page-i].free == 1) {
+		mysize++;
+		i++;
+		page--;
+	}*/
+	i = 0;
+	next = pages[i].size;
+	while (next < nRamFrames) {
+		
+		if(pages[i].free) {
+			while(next < nRamFrames && pages[next].free){
+				uint32_t size = pages[next].size;
+				pages[i].size += size;
+				pages[next].size = 0;
+				next += size;
+			}	
+		}
+		if (next >= nRamFrames) break;
+		i = next;
+		next += pages[i].size;
+	}
+	
+	spinlock_release(&stealmem_lock);	//Termina
 }
 #endif
 /* Allocate/free some kernel-space virtual pages */
@@ -226,8 +252,8 @@ void free_kpages(vaddr_t addr)
 	if (isTableActive())
 	{
 		paddr_t paddr = addr - MIPS_KSEG0;
-		long first = paddr / PAGE_SIZE;
-		KASSERT(allocSize != NULL);
+		uint32_t first = paddr / PAGE_SIZE;
+		KASSERT(pages != NULL);
 		KASSERT(nRamFrames > first);
 		freeppages(paddr);
 	}
@@ -546,3 +572,5 @@ int as_copy(struct addrspace *old, struct addrspace **ret)
 	*ret = new;
 	return 0;
 }
+
+
