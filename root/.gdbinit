@@ -10,4 +10,8 @@ def dbos161s
   dir ../os161-base-2.0.3/kern/compile/SYSCALL
   target remote unix:.sockets/gdb
 end
+def dbos161c
+  dir ../os161-base-2.0.3/kern/compile/LOCK
+  target remote unix:.sockets/gdb
+end
 dbos161
