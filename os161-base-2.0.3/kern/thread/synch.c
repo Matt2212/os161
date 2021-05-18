@@ -158,7 +158,7 @@ lock_create(const char *name)
         lock->sem = sem_create(name, 1);
         if(lock->sem == NULL) {
                 kfree(lock->lk_name);
-                kfree(lock)
+                kfree(lock);
                 return NULL;
         }
 #endif
@@ -178,7 +178,7 @@ lock_destroy(struct lock *lock)
 
         kfree(lock->lk_name);
 #if OPT_LOCK_SEM
-        sem_destroy(lock->sem)
+        sem_destroy(lock->sem);
 #endif
         kfree(lock);
 }
@@ -210,7 +210,7 @@ lock_release(struct lock *lock)
 {
 
 #if OPT_LOCK_SEM
-        KASSERT(lock_do_i_hold())
+        KASSERT(lock_do_i_hold(lock));
         lock->holder = NULL;
         V(lock->sem);
         HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
@@ -231,7 +231,7 @@ lock_do_i_hold(struct lock *lock)
 
 #if OPT_LOCK_SEM
 
-        return (lock->holder == curthread)
+        return (lock->holder == curthread);
 
 #else
         // Write this
