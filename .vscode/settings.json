@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "wchan.h": "c",
+        "spinlock.h": "c",
+        "membar.h": "c",
+        "current.h": "c",
+        "thread": "cpp",
+        "syscall.h": "c"
+    }
+}

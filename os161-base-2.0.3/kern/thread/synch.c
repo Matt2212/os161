@@ -40,6 +40,7 @@
 #include <current.h>
 #include <synch.h>
 
+
 ////////////////////////////////////////////////////////////
 //
 // Semaphore.
@@ -153,7 +154,14 @@ lock_create(const char *name)
                 kfree(lock);
                 return NULL;
         }
-
+#if OPT_LOCK_SEM
+        lock->sem = sem_create(name, 1);
+        if(lock->sem == NULL) {
+                kfree(lock->lk_name);
+                kfree(lock)
+                return NULL;
+        }
+#endif
 	HANGMAN_LOCKABLEINIT(&lock->lk_hangman, lock->lk_name);
 
         // add stuff here as needed
@@ -169,12 +177,22 @@ lock_destroy(struct lock *lock)
         // add stuff here as needed
 
         kfree(lock->lk_name);
+#if OPT_LOCK_SEM
+        sem_destroy(lock->sem)
+#endif
         kfree(lock);
 }
 
 void
 lock_acquire(struct lock *lock)
 {
+#if OPT_LOCK_SEM
+
+        P(lock->sem);
+        HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
+        lock->holder = curthread;
+        HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
+#else
 	/* Call this (atomically) before waiting for a lock */
 	//HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
 
@@ -184,27 +202,44 @@ lock_acquire(struct lock *lock)
 
 	/* Call this (atomically) once the lock is acquired */
 	//HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
+#endif
 }
 
 void
 lock_release(struct lock *lock)
 {
+
+#if OPT_LOCK_SEM
+        KASSERT(lock_do_i_hold())
+        lock->holder = NULL;
+        V(lock->sem);
+        HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
+
+#else
 	/* Call this (atomically) when the lock is released */
 	//HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
 
         // Write this
 
         (void)lock;  // suppress warning until code gets written
+#endif
 }
 
 bool
 lock_do_i_hold(struct lock *lock)
 {
+
+#if OPT_LOCK_SEM
+
+        return (lock->holder == curthread)
+
+#else
         // Write this
 
         (void)lock;  // suppress warning until code gets written
 
         return true; // dummy until code gets written
+#endif
 }
 
 ////////////////////////////////////////////////////////////

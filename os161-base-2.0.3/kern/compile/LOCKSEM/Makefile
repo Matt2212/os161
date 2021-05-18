@@ -8,7 +8,7 @@ TOP=$(KTOP)/..
 # Debug vs. optimize
 KDEBUG=-g -Og
 # Name of the kernel config file
-CONFNAME=LOCK
+CONFNAME=LOCKSEM
 
 .include "$(TOP)/mk/os161.config.mk"
 .include "files.mk"

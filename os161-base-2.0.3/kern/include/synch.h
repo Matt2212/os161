@@ -33,9 +33,13 @@
 /*
  * Header file for synchronization primitives.
  */
-
-
 #include <spinlock.h>
+
+#include "opt-lock_sem.h"
+
+#if OPT_LOCK_SEM
+#include <thread.h>
+#endif
 
 /*
  * Dijkstra-style semaphore.
@@ -77,6 +81,10 @@ struct lock {
         HANGMAN_LOCKABLE(lk_hangman);   /* Deadlock detector hook. */
         // add what you need here
         // (don't forget to mark things volatile as needed)
+#if OPT_LOCK_SEM
+        struct thread *holder;
+        struct semaphore* sem;
+#endif
 };
 
 struct lock *lock_create(const char *name);

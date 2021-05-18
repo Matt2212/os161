@@ -11,7 +11,7 @@ def dbos161s
   target remote unix:.sockets/gdb
 end
 def dbos161c
-  dir ../os161-base-2.0.3/kern/compile/LOCK
+  dir ../os161-base-2.0.3/kern/compile/LOCKSEM
   target remote unix:.sockets/gdb
 end
 dbos161
