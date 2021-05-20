@@ -220,10 +220,12 @@ static void freeppages(paddr_t addr)
 				pages[i].size += size;
 				pages[next].size = 0;
 				next += size;
+				//rivedi non va bene settare a zero il pages[next].size
 			}	
 		}
+		if (next >= nRamFrames) break;
 		i = next;
-		next += pages[next].size;
+		next += pages[i].size;
 	}
 	
 	spinlock_release(&stealmem_lock);	//Termina

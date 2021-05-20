@@ -187,6 +187,9 @@ void
 lock_acquire(struct lock *lock)
 {
 #if OPT_LOCK_SEM
+        
+        KASSERT(lock != NULL);
+        KASSERT(!lock_do_i_hold(lock));
 
         P(lock->sem);
         HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
