@@ -172,7 +172,10 @@ getppages(unsigned long npages)
 	page = i;
 	// page adesso conterrà il primo frame libero
 	// aggiorno la tabella
-	pages[page + npages].size = pages[page].size - npages;
+	found = pages[page].size - npages;
+	if(found)
+		pages[page + npages].size = found;
+	KASSERT(pages[page + npages].size > 0);
 	pages[page].size = npages;
 	for (i = page; i < page + npages; i++)
 		pages[i].free = 0;
@@ -221,6 +224,7 @@ static void freeppages(paddr_t addr)
 				pages[next].size = 0;
 				next += size;
 			}	
+			if (next >= nRamFrames) break;
 		}
 		i = next;
 		next += pages[next].size;
