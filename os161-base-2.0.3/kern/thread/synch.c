@@ -154,6 +154,7 @@ lock_create(const char *name)
                 kfree(lock);
                 return NULL;
         }
+
 #if OPT_LOCK_SEM
         lock->sem = sem_create(name, 1);
         if(lock->sem == NULL) {
@@ -161,6 +162,15 @@ lock_create(const char *name)
                 kfree(lock);
                 return NULL;
         }
+#elif OPT_LOCK_SPIN
+        spinlock_init(&lock->lock);
+        lock->lock_wchan = wchan_create("lock_wchan");
+        if(lock->lock_wchan == NULL) {
+                kfree(lock->lk_name);
+                kfree(lock);
+                return NULL;
+        }
+
 #endif
 	HANGMAN_LOCKABLEINIT(&lock->lk_hangman, lock->lk_name);
 
@@ -195,6 +205,15 @@ lock_acquire(struct lock *lock)
         HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
         lock->holder = curthread;
         HANGMAN_ACQUIRE(&curthread->t_hangman, &lock->lk_hangman);
+#elif OPT_LOCK_SPIN
+        KASSERT(lock != NULL);
+        KASSERT(!lock_do_i_hold(lock));
+        spinlock_acquire(&lock->lock);
+        while (lock->holder != NULL) //qualcun'altro ha il lock
+                wchan_sleep(lock->lock_wchan, &lock->lock);
+        lock->holder = curthread;
+        spinlock_release(&lock->lock);
+
 #else
 	/* Call this (atomically) before waiting for a lock */
 	//HANGMAN_WAIT(&curthread->t_hangman, &lock->lk_hangman);
@@ -217,7 +236,12 @@ lock_release(struct lock *lock)
         lock->holder = NULL;
         V(lock->sem);
         HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
-
+#elif OPT_LOCK_SPIN
+        KASSERT(lock_do_i_hold(lock));
+        spinlock_acquire(&lock->lock);
+        lock->holder = NULL;
+        wchan_wakeall(lock->lock_wchan, &lock->lock);
+        spinlock_release(&lock->lock);
 #else
 	/* Call this (atomically) when the lock is released */
 	//HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
@@ -236,6 +260,8 @@ lock_do_i_hold(struct lock *lock)
 
         return (lock->holder == curthread);
 
+#elif OPT_LOCK_SPIN
+        return (lock->holder == curthread);
 #else
         // Write this
 

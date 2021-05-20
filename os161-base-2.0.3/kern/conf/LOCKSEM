@@ -37,3 +37,7 @@ options my_syscall
 defoption lock_sem
 
 options lock_sem
+
+defoption lock_spin
+
+options lock_spin

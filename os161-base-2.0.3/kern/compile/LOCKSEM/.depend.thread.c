@@ -10,5 +10,5 @@ thread.o: ../../thread/thread.c ../../include/types.h \
  includelinks/kern/machine/setjmp.h ../../include/threadprivate.h \
  ../../include/proc.h ../../include/current.h \
  includelinks/machine/current.h ../../include/synch.h opt-lock_sem.h \
- ../../include/addrspace.h ../../include/vm.h opt-dumbvm.h \
- ../../include/mainbus.h ../../include/vnode.h
+ opt-lock_spin.h ../../include/addrspace.h ../../include/vm.h \
+ opt-dumbvm.h ../../include/mainbus.h ../../include/vnode.h

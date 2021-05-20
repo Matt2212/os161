@@ -8,7 +8,7 @@ emu.o: ../../dev/lamebus/emu.c ../../include/types.h \
  ../../include/membar.h includelinks/machine/membar.h \
  ../../include/synch.h ../../include/spinlock.h ../../include/hangman.h \
  opt-hangman.h includelinks/machine/spinlock.h opt-lock_sem.h \
- ../../include/thread.h ../../include/threadlist.h \
+ opt-lock_spin.h ../../include/thread.h ../../include/threadlist.h \
  includelinks/machine/thread.h ../../include/setjmp.h \
  includelinks/kern/machine/setjmp.h ../../dev/lamebus/emu.h \
  includelinks/platform/bus.h includelinks/machine/vm.h \

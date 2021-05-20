@@ -6,4 +6,4 @@ tt3.o: ../../test/tt3.c ../../include/types.h ../../include/kern/types.h \
  includelinks/machine/spinlock.h ../../include/threadlist.h \
  includelinks/machine/thread.h ../../include/setjmp.h \
  includelinks/kern/machine/setjmp.h ../../include/synch.h opt-lock_sem.h \
- ../../include/test.h
+ opt-lock_spin.h ../../include/test.h

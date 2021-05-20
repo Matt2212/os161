@@ -36,8 +36,9 @@
 #include <spinlock.h>
 
 #include "opt-lock_sem.h"
+#include "opt-lock_spin.h"
 
-#if OPT_LOCK_SEM
+#if OPT_LOCK_SEM || OPT_LOCK_SPIN
 #include <thread.h>
 #endif
 
@@ -84,6 +85,10 @@ struct lock {
 #if OPT_LOCK_SEM
         struct thread *holder;
         struct semaphore* sem;
+#elif OPT_LOCK_SPIN
+        struct spinlock lock;
+        struct thread *holder;
+        struct wchan *lock_wchan;
 #endif
 };
 

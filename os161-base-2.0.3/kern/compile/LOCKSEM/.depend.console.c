@@ -9,5 +9,5 @@ console.o: ../../dev/generic/console.c ../../include/types.h \
  includelinks/machine/thread.h ../../include/setjmp.h \
  includelinks/kern/machine/setjmp.h ../../include/current.h \
  includelinks/machine/current.h ../../include/synch.h opt-lock_sem.h \
- ../../dev/generic/console.h ../../include/vfs.h ../../include/device.h \
- autoconf.h
+ opt-lock_spin.h ../../dev/generic/console.h ../../include/vfs.h \
+ ../../include/device.h autoconf.h
