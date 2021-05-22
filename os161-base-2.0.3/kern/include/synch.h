@@ -131,6 +131,7 @@ struct cv {
         // (don't forget to mark things volatile as needed)
 #if OPT_LOCK_SPIN
         struct wchan *cv_wchan;
+        struct spinlock lock;
 #endif
 };
 

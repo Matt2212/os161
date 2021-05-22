@@ -164,13 +164,13 @@ lock_create(const char *name)
         }
 #elif OPT_LOCK_SPIN
         spinlock_init(&lock->lock);
-        lock->lock_wchan = wchan_create("lock_wchan");
+        lock->lock_wchan = wchan_create(lock->lk_name);
         if(lock->lock_wchan == NULL) {
                 kfree(lock->lk_name);
                 kfree(lock);
                 return NULL;
         }
-
+        lock->holder = NULL;
 #endif
 	HANGMAN_LOCKABLEINIT(&lock->lk_hangman, lock->lk_name);
 
@@ -190,6 +190,7 @@ lock_destroy(struct lock *lock)
 #if OPT_LOCK_SEM
         sem_destroy(lock->sem);
 #elif OPT_LOCK_SPIN
+        spinlock_cleanup(&lock->lock);
         wchan_destroy(lock->lock_wchan);
 #endif
         kfree(lock);
@@ -213,6 +214,7 @@ lock_acquire(struct lock *lock)
         spinlock_acquire(&lock->lock);
         while (lock->holder != NULL) //qualcun'altro ha il lock
                 wchan_sleep(lock->lock_wchan, &lock->lock);
+        KASSERT(lock->holder == NULL);
         lock->holder = curthread;
         spinlock_release(&lock->lock);
 
@@ -234,12 +236,14 @@ lock_release(struct lock *lock)
 {
 
 #if OPT_LOCK_SEM
+        KASSERT(lock != NULL);
         KASSERT(lock_do_i_hold(lock));
         lock->holder = NULL;
         V(lock->sem);
         HANGMAN_RELEASE(&curthread->t_hangman, &lock->lk_hangman);
 #elif OPT_LOCK_SPIN
-        KASSERT(lock_do_i_hold(lock));
+        KASSERT(lock != NULL);
+	KASSERT(lock_do_i_hold(lock));
         spinlock_acquire(&lock->lock);
         lock->holder = NULL;
         wchan_wakeall(lock->lock_wchan, &lock->lock);
@@ -292,12 +296,13 @@ cv_create(const char *name)
 
         // add stuff here as needed
 #if OPT_LOCK_SPIN
-        cv->cv_wchan = wchan_create(name);
+        cv->cv_wchan = wchan_create(cv->cv_name);
         if (cv->cv_wchan == NULL){
                 kfree(cv->cv_name);
                 kfree(cv);
                 return NULL;
         }
+        spinlock_init(&cv->lock);
 #endif
         return cv;
 }
@@ -309,6 +314,7 @@ cv_destroy(struct cv *cv)
 
         // add stuff here as needed
 #if OPT_LOCK_SPIN
+        spinlock_cleanup(&cv->lock);
         wchan_destroy(cv->cv_wchan);
 #endif
         kfree(cv->cv_name);
@@ -320,10 +326,12 @@ cv_wait(struct cv *cv, struct lock *lock)
 {
 #if OPT_LOCK_SPIN
         KASSERT(lock != NULL);
+	KASSERT(cv != NULL);
         KASSERT(lock_do_i_hold(lock));
+        spinlock_acquire(&cv->lock);
         lock_release(lock);
-        spinlock_acquire(&lock->lock);
-        wchan_sleep(cv->cv_wchan, &lock->lock);
+        wchan_sleep(cv->cv_wchan, &cv->lock);
+        spinlock_release(&cv->lock);
         lock_acquire(lock);
 #else
         // Write this
@@ -338,10 +346,11 @@ cv_signal(struct cv *cv, struct lock *lock)
 {
 #if OPT_LOCK_SPIN
         KASSERT(lock != NULL);
+	KASSERT(cv != NULL);
         KASSERT(lock_do_i_hold(lock));
-        spinlock_acquire(&lock->lock);
-        wchan_wakeone(cv->cv_wchan, &lock->lock);
-        spinlock_release(&lock->lock);
+        spinlock_acquire(&cv->lock);
+        wchan_wakeone(cv->cv_wchan, &cv->lock);
+        spinlock_release(&cv->lock);
 #else
         // Write this
 
@@ -354,10 +363,12 @@ void
 cv_broadcast(struct cv *cv, struct lock *lock)
 {
 #if OPT_LOCK_SPIN
+        KASSERT(lock != NULL);
+	KASSERT(cv != NULL);
         KASSERT(lock_do_i_hold(lock));
-        spinlock_acquire(&lock->lock);
-        wchan_wakeall(cv->cv_wchan, &lock->lock);
-        spinlock_release(&lock->lock);
+        spinlock_acquire(&cv->lock);
+        wchan_wakeall(cv->cv_wchan, &cv->lock);
+        spinlock_release(&cv->lock);
 #else
         // Write this
 
