@@ -82,6 +82,10 @@ proc_create(const char *name)
 	/* VFS fields */
 	proc->p_cwd = NULL;
 
+#if OPT_WAIT_PROC
+	proc->wchan = wchan_create(name);
+#endif
+
 	return proc;
 }
 
@@ -167,6 +171,10 @@ proc_destroy(struct proc *proc)
 
 	KASSERT(proc->p_numthreads == 0);
 	spinlock_cleanup(&proc->p_lock);
+
+#if OPT_WAIT_PROC
+	wchan_destroy(proc->wchan);
+#endif
 
 	kfree(proc->p_name);
 	kfree(proc);
@@ -318,3 +326,13 @@ proc_setas(struct addrspace *newas)
 	spinlock_release(&proc->p_lock);
 	return oldas;
 }
+
+#if OPT_WAIT_PROC
+
+int proc_wait(struct proc* p) {
+	spinlock_acquire(&p->p_lock);
+	wchan_sleep(p->wchan, &p->p_lock);
+	return p->status;
+}
+
+#endif

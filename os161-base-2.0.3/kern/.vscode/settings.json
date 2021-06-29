@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "proc.h": "c",
+        "current.h": "c",
+        "spl.h": "c",
+        "opt-net.h": "c",
+        "opt-wait_proc.h": "c",
+        "spinlock.h": "c",
+        "wchan.h": "c"
+    }
+}

@@ -37,6 +37,8 @@
  */
 
 #include <spinlock.h>
+#include <wchan.h>
+#include "opt-wait_proc.h"
 
 struct addrspace;
 struct thread;
@@ -72,6 +74,11 @@ struct proc {
 
 	/* add more material here as needed */
 	int status;			/* current process exit status */
+
+#if OPT_WAIT_PROC
+	struct wchan *wchan;
+#endif
+
 };
 
 /* This is the process structure for the kernel and for kernel-only threads. */
@@ -98,5 +105,10 @@ struct addrspace *proc_getas(void);
 /* Change the address space of the current process, and return the old one. */
 struct addrspace *proc_setas(struct addrspace *);
 
+#if OPT_WAIT_PROC
+
+int proc_wait(struct proc* p);
+
+#endif
 
 #endif /* _PROC_H_ */
