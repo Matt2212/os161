@@ -33,6 +33,8 @@ void sys__exit(int exit_code){
 
 #if OPT_WAIT_PROC
 pid_t sys_waitpid(pid_t pid, int *status, int flags) {
+	(void) status;
+	(void) flags;
 	return pid;
 }
 #endif

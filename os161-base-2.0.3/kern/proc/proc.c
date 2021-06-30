@@ -94,7 +94,7 @@ proc_create(const char *name)
 #if OPT_WAIT_PROC
 	proc->cv = cv_create(name);
 	proc->lock = lock_create(name);
-	array_add(proc_table, proc, proc->pid);
+	proc_array_add(proc_table, proc, (unsigned int *) &proc->pid);
 #endif
 	return proc;
 }
@@ -185,7 +185,7 @@ proc_destroy(struct proc *proc)
 #if OPT_WAIT_PROC
 	lock_destroy(proc->lock);
 	cv_destroy(proc->cv);
-	array_set(proc_table, proc->pid, NULL);
+	proc_array_set(proc_table, proc->pid, NULL);
 #endif
 
 	kfree(proc->p_name);
@@ -198,10 +198,7 @@ proc_destroy(struct proc *proc)
 void
 proc_bootstrap(void)
 {
-	kproc = proc_create("[kernel]");
-	if (kproc == NULL) {
-		panic("proc_create for kproc failed\n");
-	}
+
 #if OPT_WAIT_PROC
 	proc_table = proc_array_create();
 	if (proc_table == NULL) {
@@ -211,6 +208,11 @@ proc_bootstrap(void)
 		panic("proc_create (proc_array_preallocate) for proc_table failed\n");
 	}
 #endif
+
+	kproc = proc_create("[kernel]");
+	if (kproc == NULL) {
+		panic("proc_create for kproc failed\n");
+	}
 }
 
 /*
