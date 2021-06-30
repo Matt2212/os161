@@ -149,6 +149,9 @@ thread_create(const char *name)
 
 	/* If you add to struct thread, be sure to initialize here */
 
+	#if OPT_WAIT_PROC
+	thread->t_exited = false;
+	#endif
 	return thread;
 }
 
@@ -786,6 +789,9 @@ thread_exit(void)
 	 * Detach from our process. You might need to move this action
 	 * around, depending on how your wait/exit works.
 	 */
+#if OPT_WAIT_PROC
+	if(!cur->t_exited)
+#endif
 	proc_remthread(cur);
 
 	/* Make sure we *are* detached (move this only if you're sure!) */

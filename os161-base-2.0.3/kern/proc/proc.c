@@ -49,6 +49,15 @@
 #include <addrspace.h>
 #include <vnode.h>
 
+#if OPT_WAIT_PROC
+#include <array.h>
+#define INITIAL_CAPACITY 128
+DECLARRAY_BYTYPE(proc_array, struct proc, ARRAYINLINE);
+DEFARRAY_BYTYPE(proc_array, struct proc, ARRAYINLINE);
+  
+struct proc_array* proc_table;
+
+#endif
 /*
  * The process for the kernel; this holds all the kernel-only threads.
  */
@@ -83,9 +92,10 @@ proc_create(const char *name)
 	proc->p_cwd = NULL;
 
 #if OPT_WAIT_PROC
-	proc->wchan = wchan_create(name);
+	proc->cv = cv_create(name);
+	proc->lock = lock_create(name);
+	array_add(proc_table, proc, proc->pid);
 #endif
-
 	return proc;
 }
 
@@ -173,7 +183,9 @@ proc_destroy(struct proc *proc)
 	spinlock_cleanup(&proc->p_lock);
 
 #if OPT_WAIT_PROC
-	wchan_destroy(proc->wchan);
+	lock_destroy(proc->lock);
+	cv_destroy(proc->cv);
+	array_set(proc_table, proc->pid, NULL);
 #endif
 
 	kfree(proc->p_name);
@@ -190,6 +202,15 @@ proc_bootstrap(void)
 	if (kproc == NULL) {
 		panic("proc_create for kproc failed\n");
 	}
+#if OPT_WAIT_PROC
+	proc_table = proc_array_create();
+	if (proc_table == NULL) {
+		panic("proc_create (proc_array_create) for proc_table failed\n");
+	}
+	if (proc_array_preallocate(proc_table, INITIAL_CAPACITY)) {
+		panic("proc_create (proc_array_preallocate) for proc_table failed\n");
+	}
+#endif
 }
 
 /*
@@ -330,9 +351,15 @@ proc_setas(struct addrspace *newas)
 #if OPT_WAIT_PROC
 
 int proc_wait(struct proc* p) {
-	spinlock_acquire(&p->p_lock);
-	wchan_sleep(p->wchan, &p->p_lock);
-	return p->status;
+	int status;
+	lock_acquire(p->lock);
+	cv_wait(p->cv, p->lock);
+	
+	status = p->status;
+	lock_release(p->lock);
+	
+	proc_destroy(p);
+	return status;
 }
 
 #endif

@@ -140,7 +140,11 @@ common_prog(int nargs, char **args)
 	 */
 
 #if OPT_WAIT_PROC
-	return proc_wait(proc);
+{
+	int exit_code = proc_wait(proc);
+	kprintf("Process returned with exit code: %d\n", exit_code);
+	return exit_code;
+}
 #else
 	return exit;
 

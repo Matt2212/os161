@@ -37,8 +37,10 @@
  */
 
 #include <spinlock.h>
-#include <wchan.h>
 #include "opt-wait_proc.h"
+#if OPT_WAIT_PROC
+#include <synch.h>
+#endif
 
 struct addrspace;
 struct thread;
@@ -76,7 +78,9 @@ struct proc {
 	int status;			/* current process exit status */
 
 #if OPT_WAIT_PROC
-	struct wchan *wchan;
+	struct lock *lock;
+	struct cv *cv;
+	pid_t pid;
 #endif
 
 };

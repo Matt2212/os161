@@ -64,6 +64,7 @@ int sys___time(userptr_t user_seconds, userptr_t user_nanoseconds);
 int sys_read(int fd, const void *buff, size_t count);
 int sys_write(int fd, void *buff, size_t count);
 void sys__exit(int exit_code);
+pid_t sys_waitpid(pid_t pid, int *status, int flags);
 #endif
 
 #endif /* _SYSCALL_H_ */

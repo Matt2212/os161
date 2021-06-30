@@ -123,6 +123,14 @@ syscall(struct trapframe *tf)
 			sys__exit((int) tf->tf_a0);
 			err = 0;
 			break;
+#if OPT_WAIT_PROC
+		case SYS_waitpid:
+			retval = sys_waitpid((pid_t) tf->tf_a0, (int*) tf->tf_a1, (int) tf->tf_a2);
+			if(retval < 0) err = ENOSYS;
+			err = 0;
+			break;
+#endif
+		
 #endif
 			/* Add stuff here */
 

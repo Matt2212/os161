@@ -39,6 +39,7 @@
 #include <array.h>
 #include <spinlock.h>
 #include <threadlist.h>
+#include "opt-wait_proc.h"
 
 struct cpu;
 
@@ -107,6 +108,9 @@ struct thread {
 	 */
 
 	/* add more here as needed */
+	#if OPT_WAIT_PROC
+	bool t_exited;
+	#endif
 };
 
 /*
